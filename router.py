@@ -26,14 +26,17 @@ class Router(threading.Thread):
 				sender, self.message = self.sock.recv_multipart()
 			if self.message is not None\
 			and sender == 'GUI':
+				print sender
+				print self.message
 				if self.message == 'WINDOWCLOSED':
 					print '{0}:{1}'.format('q2', self.message)
 					self.sock.send_multipart(['web-dealer', self.message])
 					self.sock.close()
 					return -1
-				print '{0}:{1}'.format(sender, self.message)
-				self.sock.send_multipart(['web-dealer', self.message])
-				self.message = None
+				else:
+					print '{0}:{1}'.format(sender, self.message)
+					self.sock.send_multipart(['web-dealer', self.message])
+					self.message = None
 	
 	def join(self, timeout=None):
 		self.stoprequest.set()

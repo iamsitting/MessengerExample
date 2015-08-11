@@ -122,6 +122,7 @@ class Messenger(tk.Frame):
 		
 	def OnButtonClick(self):
 		input = self.entryVariable.get()
+		print "From user: {0}".format(input)
 		#self.labelVariable.set(input +" (via button)")
 		self.UpdateHistory(input)
 		self.entry.focus_set()

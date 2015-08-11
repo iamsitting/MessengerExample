@@ -44,12 +44,13 @@ class App():
 	
 	def initializer(self):
 		self.context = zmq.Context()
-		self.rtsock = RouterSocket(self.context)
+		self.ipc = IPCDealer(self.context)
+		self.tcp = TCPDealer(self.context)
+		
 		self.threads = [
 			Gui(1, 'gui', self.context),
-			Router(2, 'router', self.context),
-			Sender(3, 'sender', self.context, self.rtsock),
-			#Receiver(4, 'web-recv', self.context, self.rtsock),
+			Sender(2, 'sender', self.tcp, self.ipc),
+			Receiver(3, 'recv', self.tcp, self.ipc),
 		]
 		
 		for th in self.threads:
@@ -61,6 +62,8 @@ class App():
 			print th.threadID
 			th.join(10)
 		print 'ctx.term'
+		#self.ipc.close()
+		#self.tcp.close()
 		self.context.term()
 			
 	def run(self):

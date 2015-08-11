@@ -58,6 +58,3 @@ def run():
 	app = App() #First GUI has no parent
 	app.mainloop()
 	return app
-	
-if __name__ == '__main__':
-	run()
