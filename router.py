@@ -1,5 +1,6 @@
 import zmq
 import threading
+from constants import *
 
 IPCADDR = "ipc:///tmp/router.ipc"
 
@@ -26,20 +27,18 @@ class Router(threading.Thread):
                 sender, self.message = self.sock.recv_multipart()
             if self.message is not None:
                 if sender == 'GUI':
-                    print sender
-                    print self.message
                     if self.message == 'WINDOWCLOSED':
-                        print '{0}:{1}'.format('q2', self.message)
+                        # print '{0}:{1}'.format('q2', self.message)
                         self.sock.send_multipart(['web-dealer', self.message])
                         self.sock.close()
                         return -1
                     else:
-                        print '{0}:{1}'.format(sender, self.message)
+                        tprint('{0}:{1}'.format(sender, self.message))
                         self.sock.send_multipart(['web-dealer', self.message])
                         self.message = None
                 elif sender == 'web-dealer':
-                    print sender
-                    print self.message
+                    # print sender
+                    # print self.message
                     self.sock.send_multipart(['GUI', self.message])
                     self.message = None
 

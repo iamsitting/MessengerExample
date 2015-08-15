@@ -13,18 +13,23 @@ class App:
     def __init__(self):
         self.context = None
         self.threads = []
-        self.ipc = None
-        self.tcp = None
+        self.ipc_s = None
+        self.ipc_r = None
+        self.tcp_s = None
+        self.tcp_r = None
 
     def initializer(self):
         self.context = zmq.Context()
-        self.ipc = IPCDealer(self.context)
-        self.tcp = TCPDealer(self.context)
+        self.ipc_s = IPCDealer(self.context)
+        # self.ipc_r = IPCDealer(self.context)
+        self.tcp_s = TCPDealer(self.context)
+        # self.tcp_r = TCPDealer(self.context)
 
         self.threads = [
             Router(1, 'router', self.context),
-            Sender(2, 'sender', self.tcp, self.ipc),
-            Receiver(3, 'receiver', self.tcp, self.ipc),
+            Client(2, 'client'),
+            Sender(3, 'sender'),
+            Receiver(4, 'receiver'),
 
         ]
 

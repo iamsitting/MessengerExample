@@ -61,6 +61,7 @@ class RootApp(tk.Tk):
             self.conn.socket.close()
             self.quitted = True
             self.quit()
+            raise SIGTERM_Received
 
 
 def run():  # root tester

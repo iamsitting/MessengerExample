@@ -11,8 +11,8 @@ class IPCDealer:
         self.in_sock.identity = 'web-dealer'
         self.in_sock.setsockopt(zmq.LINGER, 0)
         self.in_sock.connect(IPC_ADDR)
-        self.poller = zmq.Poller()
-        self.poller.register(self.in_sock, zmq.POLLIN)
+        # self.poller = zmq.Poller()
+        # self.poller.register(self.in_sock, zmq.POLLIN)
 
     def close(self):
         self.in_sock.close()
@@ -25,39 +25,131 @@ class TCPDealer:
         self.out_sock.identity = "tcp-dealer"
         self.out_sock.setsockopt(zmq.LINGER, 0)
         self.out_sock.connect(TCP_ADDR)
-        self.poller = zmq.Poller()
-        self.poller.register(self.out_sock, zmq.POLLIN)
+        # self.poller = zmq.Poller()
+        # self.poller.register(self.out_sock, zmq.POLLIN)
 
     def close(self):
         self.out_sock.close()
 
 
-class Sender(threading.Thread):
+class Client2(threading.Thread):
     def __init__(self, threadID, name, tcp_dealer, ipc_dealer):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.stoprequest = threading.Event()
-
-        self.tcp = tcp_dealer
         self.ipc = ipc_dealer
+        self.tcp = tcp_dealer
+
+        self.poller = zmq.Poller()
+        self.poller.register(self.ipc.in_sock, zmq.POLLIN)
+        self.poller.register(self.tcp.out_sock, zmq.POLLIN)
 
     def run(self):
         while not self.stoprequest.is_set():
-            socks = dict(self.ipc.poller.poll(1000))
-            if self.ipc.in_sock in socks and socks[self.ipc.in_sock] == zmq.POLLIN:
+            tprint('poll')
+            socks = dict(self.poller.poll(1000))
+
+            # message to be sent to server
+            if self.ipc.in_sock in socks: # and socks[self.ipc.in_sock] == zmq.POLLIN:
                 msg = self.ipc.in_sock.recv()
                 if msg == 'WINDOWCLOSED':
-                    print 'q3'
-                    return -1
+                    pass
                 else:
-                    print "{0}:{1}".format('To server', msg)
+                    tprint("{0}:{1}".format('To server', msg))
                     self.tcp.out_sock.send(msg)
-                    # in_msg = self.out_sock.recv()
-                    # print "{0}:{1}".format('From server', in_msg)
-                    # self.dealer.in_sock.send(in_msg)
-        self.tcp.close()
+
+            # message received from server
+            if self.tcp.out_sock in socks:
+                tprint("yes")
+                targ, msg = self.tcp.out_sock.recv()
+                tprint("{0}:{1} from {2}".format('Received', msg, targ))
+                if msg == 'World!':
+                    self.ipc.in_sock.send_string(msg)
         self.ipc.close()
+        self.tcp.close()
+
+    def join(self, timeout=None):
+        self.stoprequest.set()
+        super(Client2, self).join(timeout)
+
+
+class Client(threading.Thread):
+    def __init__(self, threadID, name):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.stoprequest = threading.Event()
+
+        self.context = zmq.Context()
+        self.dealer = self.context.socket(zmq.DEALER)
+        self.pull = self.context.socket(zmq.PULL)
+        self.push = self.context.socket(zmq.PUSH)
+
+        self.dealer.connect(TCP_ADDR)
+        self.pull.bind(SEND_ADDR)
+        self.push.bind(RECV_ADDR)
+
+        self.poller =zmq.Poller()
+        self.poller.register(self.dealer, zmq.POLLIN)
+        self.poller.register(self.pull, zmq.POLLIN)
+
+    def run(self):
+        while not self.stoprequest.is_set():
+            socks = dict(self.poller.poll(1000))
+            # message received from server
+            if self.dealer in socks:
+                msg = self.dealer.recv_multipart()
+                self.push.send_multipart(msg)
+            # message to be sent to server
+            if self.pull in socks:
+                msg = self.pull.recv_multipart()
+                tprint("{0}:{1}".format('pull from inproc', msg))
+                self.dealer.send_multipart(msg)
+
+        self.dealer.close()
+        self.push.close()
+        self.pull.close()
+        self.context.term()
+
+    def join(self, timeout=None):
+        self.stoprequest.set()
+        super(Client, self).join(timeout)
+
+
+class Sender(threading.Thread):
+    def __init__(self, threadID, name):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.stoprequest = threading.Event()
+
+        self.context = zmq.Context()
+        self.sender = self.context.socket(zmq.PUSH)
+        self.ipc = self.context.socket(zmq.DEALER)
+
+        self.ipc.identity = 'web-dealer'
+        self.ipc.setsockopt(zmq.LINGER, 0)
+
+        self.sender.connect(SEND_ADDR)
+        self.ipc.connect(IPC_ADDR)
+
+        self.poller = zmq.Poller()
+        self.poller.register(self.ipc, zmq.POLLIN)
+
+    def run(self):
+        while not self.stoprequest.is_set():
+            socks = dict(self.poller.poll(1000))
+            if self.ipc in socks:  # and socks[self.ipc.in_sock] == zmq.POLLIN:
+                msg = self.ipc.recv()
+                if msg == 'WINDOWCLOSED':
+                    pass
+                else:
+                    tprint("{0}:{1}".format('push to inproc', msg))
+                    self.sender.send_multipart(msg)
+
+        self.ipc.close()
+        self.sender.close()
 
     def join(self, timeout=None):
         self.stoprequest.set()
@@ -65,29 +157,22 @@ class Sender(threading.Thread):
 
 
 class Receiver(threading.Thread):
-    def __init__(self, threadID, name, tcp_dealer, ipc_dealer):
+    def __init__(self, threadID, name):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.stoprequest = threading.Event()
 
-        # Socket to talk to server
-        self.tcp = tcp_dealer
-        self.ipc = ipc_dealer
+        self.context = zmq.Context()
+        self.receiver = self.context.socket(zmq.PULL)
+        self.receiver.connect(RECV_ADDR)
 
     def run(self):
         while not self.stoprequest.is_set():
-            print 'rec: wh'
-            socks = dict(self.tcp.poller.poll(1000))
-            if self.tcp.out_sock in socks and socks[self.tcp.out_sock] == zmq.POLLIN:
-                'print yes'
-                targ, msg = self.tcp.out_sock.recv_multipart()
-                print "{0}:{1} from {2}".format('Received', msg, targ)
-                if msg == 'World!':
-                    self.ipc.in_sock.send_string(msg)
+            msg = self.receiver.recv_multipart()
+            tprint(msg)
 
-        self.tcp.close()
-        self.ipc.close()
+        self.receiver.close()
 
     def join(self, timeout=None):
         self.stoprequest.set()
