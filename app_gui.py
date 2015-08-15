@@ -21,7 +21,6 @@ class RootApp(tk.Tk):
         self.quitted = False
         self.grid()
 
-        print 'App -1'
         container = tk.Frame(self)  # parent frame
 
         container.pack(side="top", fill="both", expand=True)

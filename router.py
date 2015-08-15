@@ -2,8 +2,6 @@ import zmq
 import threading
 from constants import *
 
-IPCADDR = "ipc:///tmp/router.ipc"
-
 
 class Router(threading.Thread):
     def __init__(self, threadID, name, context):
@@ -15,7 +13,7 @@ class Router(threading.Thread):
         self.sock = self.context.socket(zmq.ROUTER)
         self.sock.identity = 'router'
         self.sock.setsockopt(zmq.LINGER, 0)
-        self.sock.bind(IPCADDR)
+        self.sock.bind(IPC_ADDR)
         self.message = None
         self.poller = zmq.Poller()
         self.poller.register(self.sock, zmq.POLLIN)

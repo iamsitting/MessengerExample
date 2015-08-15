@@ -171,7 +171,6 @@ class Receiver(threading.Thread):
         while not self.stoprequest.is_set():
             msg = self.receiver.recv_multipart()
             tprint(msg)
-
         self.receiver.close()
 
     def join(self, timeout=None):

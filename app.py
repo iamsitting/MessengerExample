@@ -30,7 +30,6 @@ class App:
             Client(2, 'client'),
             Sender(3, 'sender'),
             Receiver(4, 'receiver'),
-
         ]
 
         for th in self.threads:

@@ -14,7 +14,6 @@ while True:
     socks = dict(poller.poll(1000))
     if socket in socks and socks[socket] == zmq.POLLIN:
         sender, message = socket.recv_multipart()
-
         if message is not None:
             print '{0}:{1}'.format('server', message)
             socket.send_multipart(['web-dealer', "World!"])
