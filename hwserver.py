@@ -16,5 +16,6 @@ while True:
         sender, message = socket.recv_multipart()
         if message is not None:
             print '{0}:{1}'.format('server', message)
-            socket.send_multipart(['web-dealer', "World!"])
+            socket.send_string("world")
+            # socket.send_multipart(['web-dealer', "World!"])
             message = None

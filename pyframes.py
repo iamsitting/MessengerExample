@@ -61,7 +61,7 @@ class Login(tk.Frame):
         self.label1 = tk.Label(self, text="Username")
         self.label2 = tk.Label(self, text="Password")
         self.entry1 = tk.Entry(self)
-        self.entry2 = tk.Entry(self)
+        self.entry2 = tk.Entry(self, show="*")
         self.checkbox = tk.Checkbutton(self, text="Keep me logged in")
         self.logbtn = tk.Button(self, text="Login", command=self.on_button_click)
         self.regbtn = tk.Button(self, text="Register", command=lambda: self.cont.show_frame(Register))

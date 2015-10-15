@@ -75,19 +75,19 @@ class Client2(threading.Thread):
 
 
 class Client(threading.Thread):
-    def __init__(self, threadID, name):
+    def __init__(self, threadID, name, ctx):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.stoprequest = threading.Event()
 
-        self.context = zmq.Context()
+        self.context = ctx
         self.dealer = self.context.socket(zmq.DEALER)
         self.pull = self.context.socket(zmq.PULL)
         self.push = self.context.socket(zmq.PUSH)
 
         self.dealer.connect(TCP_ADDR)
-        self.pull.bind(SEND_ADDR)
+        self.pull.bind(SEND_ADDR) # try connect
         self.push.bind(RECV_ADDR)
 
         self.poller =zmq.Poller()
@@ -99,18 +99,20 @@ class Client(threading.Thread):
             socks = dict(self.poller.poll(1000))
             # message received from server
             if self.dealer in socks:
-                msg = self.dealer.recv_multipart()
-                self.push.send_multipart(msg)
+                tprint('test')
+                i_d, msg = self.dealer.recv_multipart()
+                tprint("{0}:{1}".format('recv from server',msg))
+                self.push.send_string(msg)
             # message to be sent to server
             if self.pull in socks:
-                msg = self.pull.recv_multipart()
+                msg = self.pull.recv_string()
                 tprint("{0}:{1}".format('pull from inproc', msg))
-                self.dealer.send_multipart(msg)
+                self.dealer.send_string(msg)
 
         self.dealer.close()
         self.push.close()
         self.pull.close()
-        self.context.term()
+        # self.context.term()
 
     def join(self, timeout=None):
         self.stoprequest.set()
@@ -118,13 +120,13 @@ class Client(threading.Thread):
 
 
 class Sender(threading.Thread):
-    def __init__(self, threadID, name):
+    def __init__(self, threadID, name, ctx):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.stoprequest = threading.Event()
 
-        self.context = zmq.Context()
+        self.context = ctx
         self.sender = self.context.socket(zmq.PUSH)
         self.ipc = self.context.socket(zmq.DEALER)
 
@@ -146,10 +148,11 @@ class Sender(threading.Thread):
                     pass
                 else:
                     tprint("{0}:{1}".format('push to inproc', msg))
-                    self.sender.send_multipart(msg)
+                    self.sender.send_string(msg)
 
         self.ipc.close()
         self.sender.close()
+        # self.context.term()
 
     def join(self, timeout=None):
         self.stoprequest.set()
@@ -157,21 +160,28 @@ class Sender(threading.Thread):
 
 
 class Receiver(threading.Thread):
-    def __init__(self, threadID, name):
+    def __init__(self, threadID, name, ctx):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.stoprequest = threading.Event()
 
-        self.context = zmq.Context()
+        self.context = ctx  # zmq.Context()
         self.receiver = self.context.socket(zmq.PULL)
+        # self.tcp = DEALER
         self.receiver.connect(RECV_ADDR)
+
+        self.poller = zmq.Poller()
+        self.poller.register(self.receiver, zmq.POLLIN)
 
     def run(self):
         while not self.stoprequest.is_set():
-            msg = self.receiver.recv_multipart()
-            tprint(msg)
+            socks = dict(self.poller.poll(1000))
+            if self.receiver in socks:
+                msg = self.receiver.recv()
+                tprint(msg)
         self.receiver.close()
+        # self.context.term()
 
     def join(self, timeout=None):
         self.stoprequest.set()
