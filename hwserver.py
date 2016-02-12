@@ -15,7 +15,8 @@ while True:
     if socket in socks and socks[socket] == zmq.POLLIN:
         sender, message = socket.recv_multipart()
         if message is not None:
-            print '{0}:{1}'.format('server', message)
-            socket.send_string("world")
-            # socket.send_multipart(['web-dealer', "World!"])
+            print '{0}:{1}'.format(sender, message)
+            message += 'world'
+            socket.send_string(message)
+            socket.send_multipart([sender, message])
             message = None

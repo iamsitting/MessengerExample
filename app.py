@@ -67,11 +67,14 @@ class App:
                 app.mainloop()
             else:
                 c = cli.CliThread(5, 'cli')
-                c.start()
+                # c.start()
+                c.mainloop()
+
         except SIGTERM_Received:
             pass
         if self.gui is True:
             app.destroy()
         else:
-            c.join(10)
+            c.destroy()
+            # c.join(10)
         self.terminator()

@@ -33,6 +33,26 @@ class CliThread(threading.Thread):
                     
         sys.exit(0)
 
+    def mainloop(self):
+        auth = {'cds100':'5959'}
+        raw_input("Press 'Enter' to continue...")
+        uname = raw_input("Enter your username.")
+        pw = raw_input("Enter your password.")
+
+        if uname in auth.keys():
+            if pw == auth[uname]:
+                print("Enter Message")
+                while not self.stoprequest.is_set():
+                    msg = raw_input("> ")
+                    self.conn.socket.send_string(msg)
+
+        sys.exit(0)
+
+    def destroy(self):
+        self.stoprequest.set()
+        self.conn.socket.close()
+        self.context.term()
+
     def join(self, timeout=None):
         self.stoprequest.set()
         super(CliThread, self).join(timeout)

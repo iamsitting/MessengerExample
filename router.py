@@ -24,7 +24,7 @@ class Router(threading.Thread):
             if self.sock in socks and socks[self.sock] == zmq.POLLIN:
                 sender, self.message = self.sock.recv_multipart()
             if self.message is not None:
-                if sender == 'GUI':
+                if sender == 'GUI' or sender == 'CLI':
                     if self.message == 'WINDOWCLOSED':
                         # print '{0}:{1}'.format('q2', self.message)
                         self.sock.send_multipart(['web-dealer', self.message])
