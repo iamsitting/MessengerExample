@@ -31,8 +31,9 @@ class App:
         self.threads = [
             Router(1, 'router', self.context),
             Client(2, 'client', self.context),
-            Sender(3, 'sender', self.context),
-            Receiver(4, 'receiver', self.context),
+            Buffer(3, 'buffer', self.context),
+            #Sender(3, 'sender', self.context),
+            #Receiver(4, 'receiver', self.context),
             #Client(2, 'client'),
         ]
 

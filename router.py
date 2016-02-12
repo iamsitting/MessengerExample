@@ -32,12 +32,13 @@ class Router(threading.Thread):
                         return -1
                     else:
                         tprint('{0}:{1}'.format(sender, self.message))
-                        self.sock.send_multipart(['web-dealer', self.message])
+                        self.sock.send_multipart(['B_CLIENT', self.message])
                         self.message = None
-                elif sender == 'web-dealer':
+                elif sender == 'B_CLIENT':
                     # print sender
                     # print self.message
-                    self.sock.send_multipart(['GUI', self.message])
+                    # self.sock.send_multipart(['GUI', self.message])
+                    print '{0}:{1}'.format('q2', self.message)
                     self.message = None
 
     def join(self, timeout=None):
